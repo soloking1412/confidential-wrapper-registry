@@ -6,7 +6,7 @@ Built for the [Zama Developer Program Bounty Season 3](https://www.zama.org/deve
 
 ## Live URL
 
-> Deploy to Vercel and update this line.
+**[https://confidential-wrapper-registry-kohl.vercel.app](https://confidential-wrapper-registry-kohl.vercel.app)**
 
 ## Supported Networks
 
