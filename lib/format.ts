@@ -1,0 +1,36 @@
+import { formatUnits } from "viem"
+
+export function formatTokenAmount(amount: bigint, decimals: number, maxFrac = 4): string {
+  const s = formatUnits(amount, decimals)
+  const [int, frac] = s.split(".")
+  if (!frac) return int
+  return `${int}.${frac.slice(0, maxFrac).replace(/0+$/, "") || "0"}`
+}
+
+export function truncateAddress(addr: string): string {
+  return `${addr.slice(0, 6)}…${addr.slice(-4)}`
+}
+
+export function formatRate(rate: bigint): string {
+  if (rate === 0n) return "—"
+  return `1:${rate.toString()}`
+}
+
+export function formatTVS(amount: bigint, decimals: number): string {
+  if (amount === 0n) return "0"
+  const n = parseFloat(formatUnits(amount, decimals))
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(2)}K`
+  return n.toFixed(4)
+}
+
+export function timeAgo(ts: number): string {
+  const diff = Date.now() - ts
+  const mins = Math.floor(diff / 60_000)
+  const hours = Math.floor(diff / 3_600_000)
+  const days = Math.floor(diff / 86_400_000)
+  if (mins < 1) return "just now"
+  if (mins < 60) return `${mins}m ago`
+  if (hours < 24) return `${hours}h ago`
+  return `${days}d ago`
+}
