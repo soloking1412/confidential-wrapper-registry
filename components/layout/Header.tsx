@@ -14,6 +14,8 @@ const NAV = [
   { href: "/", label: "Registry" },
   { href: "/wrap", label: "Wrap" },
   { href: "/decrypt", label: "Decrypt" },
+  { href: "/add-pair", label: "Add Pair" },
+  { href: "/activity", label: "Activity" },
 ]
 
 export function Header() {
@@ -39,14 +41,14 @@ export function Header() {
             </span>
           </Link>
 
-          <nav className="flex items-center gap-0.5 text-sm">
+          <nav className="flex items-center gap-0.5 text-sm overflow-x-auto">
             {links.map((link) => {
               const isActive = pathname === link.href
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`relative rounded-md px-3 py-1.5 font-medium transition-colors flex items-center gap-1 ${
+                  className={`relative rounded-md px-3 py-1.5 font-medium transition-colors flex items-center gap-1 shrink-0 whitespace-nowrap ${
                     isActive
                       ? "text-foreground bg-muted"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/60"

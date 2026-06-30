@@ -4,6 +4,7 @@ import { useState, useCallback } from "react"
 import { useWriteContract, useWaitForTransactionReceipt, useReadContract, useAccount } from "wagmi"
 import { parseUnits } from "viem"
 import { ERC20ABI, ERC7984WrapperABI } from "@/lib/contracts/abis"
+import { useActivity } from "@/hooks/useActivity"
 import type { WrapperPair } from "@/types"
 
 export type WrapState =
@@ -17,6 +18,7 @@ export type WrapState =
 
 export function useWrap(pair: WrapperPair | null, rawAmount: string) {
   const { address } = useAccount()
+  const { add: logActivity } = useActivity()
   const [state, setState] = useState<WrapState>("idle")
   const [error, setError] = useState<string | null>(null)
   const [approveTxHash, setApproveTxHash] = useState<`0x${string}` | undefined>()
@@ -85,12 +87,20 @@ export function useWrap(pair: WrapperPair | null, rawAmount: string) {
       })
       setWrapTxHash(hash)
       setState("success")
+      logActivity({
+        type: "wrap",
+        label: `Wrapped ${rawAmount} ${pair.erc20.symbol} → ${pair.wrapper.symbol}`,
+        symbol: pair.wrapper.symbol,
+        txHash: hash,
+        chainId: pair.chainId,
+        walletAddress: address,
+      })
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Transaction failed"
       setError(msg.includes("User rejected") ? "Transaction rejected" : msg.slice(0, 120))
       setState("error")
     }
-  }, [pair, address, amount, allowance, erc20Balance, writeContractAsync])
+  }, [pair, address, amount, allowance, erc20Balance, writeContractAsync, rawAmount, logActivity])
 
   const reset = useCallback(() => {
     setState("idle")

@@ -42,3 +42,26 @@ export interface CustomPair {
     decimals: number
   }
 }
+
+/** A user-added pair persisted in localStorage. `rate` is stored as a string
+ * because bigint is not JSON-serializable. */
+export interface StoredCustomPair {
+  chainId: number
+  erc20: TokenMetadata
+  wrapper: TokenMetadata
+  rate: string
+  addedAt: number
+}
+
+export type ActivityType = "wrap" | "unwrap" | "finalize" | "faucet" | "decrypt" | "add-pair"
+
+export interface ActivityItem {
+  id: string
+  type: ActivityType
+  label: string
+  symbol?: string
+  txHash?: `0x${string}`
+  chainId: number
+  walletAddress: `0x${string}`
+  timestamp: number
+}

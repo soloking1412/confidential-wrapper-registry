@@ -133,7 +133,7 @@ export function PairRow({ pair, chainId }: { pair: WrapperPair; chainId: number 
               variant="ghost"
               size="sm"
               className="h-7 text-xs"
-              onClick={() => decrypt(pair.wrapper.address, chainId)}
+              onClick={() => decrypt(pair.wrapper.address, chainId, pair.wrapper.symbol)}
               disabled={loading[key]}
             >
               {loading[key] ? "Decrypting…" : "Decrypt"}

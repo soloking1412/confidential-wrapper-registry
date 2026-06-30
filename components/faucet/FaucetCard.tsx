@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { ERC20ABI } from "@/lib/contracts/abis"
 import { etherscanTx as ethTx } from "@/lib/contracts/addresses"
 import { timeAgo, truncateAddress } from "@/lib/format"
+import { useActivity } from "@/hooks/useActivity"
 
 const FAUCET_KEY = "zama_faucet_claims"
 const CLAIM_AMOUNT = "1000"
@@ -91,6 +92,7 @@ export function FaucetCard({ symbol, name, erc20Address, wrapperAddress, decimal
 
   const { writeContractAsync } = useWriteContract()
   const { isLoading: confirming } = useWaitForTransactionReceipt({ hash: txHash })
+  const { add: logActivity } = useActivity()
 
   const handleClaim = async () => {
     if (!address) {
@@ -108,6 +110,14 @@ export function FaucetCard({ symbol, name, erc20Address, wrapperAddress, decimal
       saveClaim(address, erc20Address)
       setLastClaim(Date.now())
       setClaimed(true)
+      logActivity({
+        type: "faucet",
+        label: `Claimed ${CLAIM_AMOUNT} ${symbol}`,
+        symbol,
+        txHash: hash,
+        chainId: CHAIN_ID,
+        walletAddress: address,
+      })
       toast.success(`Claimed ${CLAIM_AMOUNT} ${symbol}`, {
         action: {
           label: "View tx",

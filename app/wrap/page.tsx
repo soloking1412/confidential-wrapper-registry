@@ -9,7 +9,6 @@ import { useRegistryPairs } from "@/hooks/useRegistryPairs"
 import { WrapForm } from "@/components/wrap/WrapForm"
 import { UnwrapForm } from "@/components/wrap/UnwrapForm"
 import { PendingUnwraps } from "@/components/wrap/PendingUnwraps"
-import { AddPairValidator } from "@/components/wrap/AddPairValidator"
 
 function WrapPageInner() {
   const chainId = useChainId()
@@ -67,8 +66,6 @@ function WrapPageInner() {
           )}
         </TabsContent>
       </Tabs>
-
-      <AddPairValidator chainId={chainId} />
     </div>
   )
 }

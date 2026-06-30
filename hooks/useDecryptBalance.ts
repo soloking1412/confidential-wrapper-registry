@@ -2,18 +2,21 @@
 
 import { useState, useCallback } from "react"
 import { useAccount, usePublicClient, useWalletClient } from "wagmi"
-import { getZamaSDK, decryptBalance } from "@/lib/sdk"
+import { getZamaSDK, decryptBalance, decryptAllBalances } from "@/lib/sdk"
+import { useActivity } from "@/hooks/useActivity"
 
 export function useDecryptBalance() {
   const { address } = useAccount()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
+  const { add: logActivity } = useActivity()
   const [balances, setBalances] = useState<Record<string, bigint>>({})
   const [loading, setLoading] = useState<Record<string, boolean>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [batchLoading, setBatchLoading] = useState(false)
 
   const decrypt = useCallback(
-    async (wrapperAddress: `0x${string}`, chainId: number) => {
+    async (wrapperAddress: `0x${string}`, chainId: number, symbol?: string) => {
       if (!address || !publicClient || !walletClient) return
 
       const key = wrapperAddress.toLowerCase()
@@ -24,6 +27,13 @@ export function useDecryptBalance() {
         const sdk = await getZamaSDK(walletClient, publicClient, chainId)
         const balance = await decryptBalance(sdk, wrapperAddress)
         setBalances((p) => ({ ...p, [key]: balance }))
+        logActivity({
+          type: "decrypt",
+          label: `Decrypted ${symbol ?? "balance"}`,
+          symbol,
+          chainId,
+          walletAddress: address,
+        })
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Decryption failed"
         setErrors((p) => ({
@@ -36,8 +46,49 @@ export function useDecryptBalance() {
         setLoading((p) => ({ ...p, [key]: false }))
       }
     },
-    [address, publicClient, walletClient]
+    [address, publicClient, walletClient, logActivity]
   )
 
-  return { balances, loading, errors, decrypt }
+  const decryptAll = useCallback(
+    async (wrapperAddresses: `0x${string}`[], chainId: number) => {
+      if (!address || !publicClient || !walletClient || wrapperAddresses.length === 0) return
+
+      setBatchLoading(true)
+      setLoading((p) => {
+        const next = { ...p }
+        for (const a of wrapperAddresses) next[a.toLowerCase()] = true
+        return next
+      })
+
+      try {
+        const sdk = await getZamaSDK(walletClient, publicClient, chainId)
+        const results = await decryptAllBalances(sdk, wrapperAddresses)
+        setBalances((p) => ({ ...p, ...results }))
+        logActivity({
+          type: "decrypt",
+          label: `Decrypted ${Object.keys(results).length} balances`,
+          chainId,
+          walletAddress: address,
+        })
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "Decryption failed"
+        const text = msg.includes("rejected") ? "Signature rejected" : "Batch decryption failed"
+        setErrors((p) => {
+          const next = { ...p }
+          for (const a of wrapperAddresses) next[a.toLowerCase()] = text
+          return next
+        })
+      } finally {
+        setLoading((p) => {
+          const next = { ...p }
+          for (const a of wrapperAddresses) next[a.toLowerCase()] = false
+          return next
+        })
+        setBatchLoading(false)
+      }
+    },
+    [address, publicClient, walletClient, logActivity]
+  )
+
+  return { balances, loading, errors, batchLoading, decrypt, decryptAll }
 }

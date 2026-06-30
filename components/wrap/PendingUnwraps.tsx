@@ -27,7 +27,7 @@ export function PendingUnwraps() {
     setBusyId(item.requestId)
     update(item.requestId, { status: "finalizing" })
     try {
-      const hash = await finalize(item.wrapperAddress, item.burnHandle, item.chainId)
+      const hash = await finalize(item.wrapperAddress, item.burnHandle, item.chainId, item.wrapperSymbol)
       update(item.requestId, { status: "done" })
       toast.success(`Unwrapped ${item.wrapperSymbol}`, {
         action: { label: "View tx", onClick: () => window.open(etherscanTx(item.chainId, hash), "_blank") },

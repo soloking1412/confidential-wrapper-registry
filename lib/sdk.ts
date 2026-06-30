@@ -72,3 +72,22 @@ export async function decryptBalance(
 ): Promise<bigint> {
   return sdk.createReadonlyToken(wrapperAddress).balanceOf()
 }
+
+/** Decrypt many balances with a single wallet signature: pre-authorize all
+ * addresses once, then read each (credentials are cached after the first). */
+export async function decryptAllBalances(
+  sdk: ZamaSDK,
+  wrapperAddresses: `0x${string}`[]
+): Promise<Record<string, bigint>> {
+  if (wrapperAddresses.length === 0) return {}
+  await sdk.allow(wrapperAddresses)
+  const out: Record<string, bigint> = {}
+  for (const addr of wrapperAddresses) {
+    try {
+      out[addr.toLowerCase()] = await sdk.createReadonlyToken(addr).balanceOf()
+    } catch {
+      // skip tokens that fail to decrypt; the caller surfaces partial results
+    }
+  }
+  return out
+}

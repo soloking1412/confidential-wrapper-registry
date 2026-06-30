@@ -17,25 +17,33 @@ Built for the [Zama Developer Program Bounty Season 3](https://www.zama.org/deve
 
 ## Features
 
-- **Registry browser** — reads `getTokenConfidentialTokenPairs()` from the onchain Wrappers Registry. Shows all valid pairs with token metadata, conversion rate, and TVS (inferred total supply).
+- **Registry browser** — reads `getTokenConfidentialTokenPairs()` from the onchain Wrappers Registry. Shows all valid pairs with token metadata, conversion rate, aggregate TVS (inferred total supply), and a rate/decimals explainer.
 - **Wrap** — ERC-20 `approve` → wrapper `wrap` with live rate preview and approval step tracking.
 - **Unwrap** — two-step async flow. Step 1 calls the Zama SDK `Token.unwrap()` and captures the `UnwrapRequested` event's encrypted-amount handle, persisting it to localStorage. Step 2 calls `Token.finalizeUnwrap(handle)` once the relayer has run the public decryption — survives page reloads.
-- **Decrypt** — EIP-712 user decryption via the Zama SDK `ReadonlyToken.balanceOf()`. Works for all registry tokens and any arbitrary ERC-7984 address.
+- **My Balances / Decrypt** — EIP-712 user decryption via the Zama SDK. Reveal balances one at a time, **or decrypt every balance with a single signature** (`sdk.allow([...])` pre-authorization). Also decrypts any arbitrary ERC-7984 address.
+- **Add a Pair (UI)** — paste an ERC-20 + ERC-7984 wrapper; the app validates them on-chain, **auto-fetches token metadata**, and adds the pair to your registry in one click. It appears instantly across Registry, Wrap, and Decrypt — no redeploy, no config edit. Stored in your browser; export a `config/customPairs.ts` snippet to make it permanent for everyone.
+- **Activity** — a per-wallet, per-network log of your wraps, unwraps, finalizations, decryptions, faucet claims, and custom-pair additions, each with an Etherscan link.
 - **Faucet** (Sepolia only) — mint 1,000 of each cTokenMock directly to your wallet.
-- **Pending unwraps tracker** — nav badge + panel showing all in-flight unwrap requests across sessions.
-- **Add pair validator** — paste any ERC-20 + wrapper address to validate and generate the config snippet.
+- **Pending unwraps tracker** — nav badge + panel showing all in-flight unwrap requests across sessions, with a working on-chain Finalize button.
 
 ## How the Registry is Sourced
 
-The app uses a **hybrid sourcing strategy**:
+The app uses a **three-layer sourcing strategy**, deduplicated by wrapper address (onchain always wins):
 
 1. **Onchain (primary)** — calls `getTokenConfidentialTokenPairs()` on the official Wrappers Registry for the connected chain. Results are filtered to `isValid === true` pairs and enriched with metadata via wagmi multicall.
 
-2. **Local config (secondary)** — `config/customPairs.ts` exports a `CUSTOM_PAIRS` array. Entries are merged with onchain pairs; onchain always wins on address conflict. Custom pairs are tagged `[custom]` in the UI.
+2. **User-added (UI)** — pairs added through the **Add a Pair** page are stored in `localStorage` and merged in live. They carry their auto-fetched metadata and rate, so they are fully functional for wrap/decrypt immediately. Tagged `[custom]` in the UI.
+
+3. **Local config (permanent)** — `config/customPairs.ts` exports a `CUSTOM_PAIRS` array for pairs that should ship with the app for everyone.
 
 ## How to Add a New ERC-20 ↔ ERC-7984 Pair
 
-Open `config/customPairs.ts` and append an entry:
+**The easy way:** open the **Add a Pair** page (`/add-pair`), paste the ERC-20 and wrapper
+addresses, and click *Validate on-chain* → *Add to my registry*. The app reads the contracts,
+auto-fills metadata, and the pair appears everywhere instantly. Use *Export config* to copy a
+`config/customPairs.ts` snippet if you want to contribute it permanently.
+
+**The permanent way:** open `config/customPairs.ts` and append an entry:
 
 ```ts
 export const CUSTOM_PAIRS: CustomPair[] = [
@@ -56,8 +64,6 @@ export const CUSTOM_PAIRS: CustomPair[] = [
   },
 ]
 ```
-
-You can also use the **Add Pair Validator** UI on the Wrap page (`/wrap`) to validate addresses against the registry and generate the config snippet automatically.
 
 ## Local Development
 

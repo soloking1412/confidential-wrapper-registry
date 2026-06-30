@@ -7,11 +7,13 @@ import { WrappersRegistryABI, ERC7984WrapperABI, ERC20ABI } from "@/lib/contract
 import { REGISTRY_ADDRESSES } from "@/lib/contracts/addresses"
 import { CUSTOM_PAIRS } from "@/config/customPairs"
 import { mergeWithCustom } from "@/lib/registry/merge"
+import { useCustomPairs } from "@/hooks/useCustomPairs"
 import type { WrapperPair } from "@/types"
 
 export function useRegistryPairs() {
   const chainId = useChainId()
   const registryAddress = REGISTRY_ADDRESSES[chainId]
+  const { pairs: userPairs } = useCustomPairs(chainId)
 
   const { data: rawPairs, isLoading: pairsLoading, error: pairsError } = useReadContract({
     address: registryAddress,
@@ -45,7 +47,9 @@ export function useRegistryPairs() {
   })
 
   const pairs = useMemo<WrapperPair[]>(() => {
-    if (!validPairs.length || !metadataResults) return []
+    if (!validPairs.length || !metadataResults) {
+      return mergeWithCustom([], CUSTOM_PAIRS, chainId).concat(userPairs)
+    }
 
     const result: WrapperPair[] = []
     for (let i = 0; i < validPairs.length; i++) {
@@ -73,8 +77,11 @@ export function useRegistryPairs() {
       })
     }
 
-    return mergeWithCustom(result, CUSTOM_PAIRS, chainId)
-  }, [validPairs, metadataResults, chainId])
+    const merged = mergeWithCustom(result, CUSTOM_PAIRS, chainId)
+    const seen = new Set(merged.map((p) => p.wrapper.address.toLowerCase()))
+    const extra = userPairs.filter((p) => !seen.has(p.wrapper.address.toLowerCase()))
+    return [...merged, ...extra]
+  }, [validPairs, metadataResults, chainId, userPairs])
 
   return {
     pairs,

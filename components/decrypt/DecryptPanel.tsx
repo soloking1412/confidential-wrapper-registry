@@ -36,7 +36,7 @@ interface Props {
 
 export function DecryptPanel({ pairs, chainId }: Props) {
   const { address } = useAccount()
-  const { balances, loading, errors, decrypt } = useDecryptBalance()
+  const { balances, loading, errors, batchLoading, decrypt, decryptAll } = useDecryptBalance()
   const [customAddr, setCustomAddr] = useState("")
   const [customDecimals, setCustomDecimals] = useState("6")
 
@@ -46,10 +46,23 @@ export function DecryptPanel({ pairs, chainId }: Props) {
   return (
     <div className="space-y-8 max-w-2xl">
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold">Registry Tokens</h2>
-          <span className="text-xs text-muted-foreground">Requires EIP-712 signature</span>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-base font-semibold">My Balances</h2>
+          {pairs.length > 0 && address && (
+            <Button
+              size="sm"
+              className="h-7 text-xs gap-1.5"
+              disabled={batchLoading}
+              onClick={() => decryptAll(pairs.map((p) => p.wrapper.address), chainId)}
+            >
+              <LockOpen className="h-3.5 w-3.5" />
+              {batchLoading ? "Decrypting…" : "Decrypt all"}
+            </Button>
+          )}
         </div>
+        <p className="text-xs text-muted-foreground -mt-2">
+          Decrypt all balances with a single EIP-712 signature, or reveal them one at a time.
+        </p>
 
         {!address && (
           <Alert>
@@ -102,7 +115,7 @@ export function DecryptPanel({ pairs, chainId }: Props) {
                       size="sm"
                       variant={balance !== undefined ? "outline" : "default"}
                       className="h-7 text-xs"
-                      onClick={() => decrypt(pair.wrapper.address, chainId)}
+                      onClick={() => decrypt(pair.wrapper.address, chainId, pair.wrapper.symbol)}
                       disabled={isLoading || !address}
                     >
                       {isLoading ? (

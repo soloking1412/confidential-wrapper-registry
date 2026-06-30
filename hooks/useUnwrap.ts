@@ -5,6 +5,7 @@ import { useAccount, usePublicClient, useWalletClient } from "wagmi"
 import { parseUnits } from "viem"
 import { getZamaSDK, requestUnwrap, finalizeUnwrap as finalizeUnwrapTx } from "@/lib/sdk"
 import { usePendingUnwraps } from "./usePendingUnwraps"
+import { useActivity } from "./useActivity"
 import type { WrapperPair } from "@/types"
 
 export type UnwrapState =
@@ -32,6 +33,7 @@ export function useUnwrap(pair: WrapperPair | null, rawAmount: string) {
   const [finalizeTxHash, setFinalizeTxHash] = useState<`0x${string}` | undefined>()
 
   const { add } = usePendingUnwraps(address, pair?.chainId)
+  const { add: logActivity } = useActivity()
 
   const decimals = pair?.wrapper.decimals ?? 6
   const amount = (() => {
@@ -69,22 +71,40 @@ export function useUnwrap(pair: WrapperPair | null, rawAmount: string) {
         timestamp: Date.now(),
         status: "pending",
       })
+      logActivity({
+        type: "unwrap",
+        label: `Requested unwrap of ${rawAmount} ${pair.wrapper.symbol}`,
+        symbol: pair.wrapper.symbol,
+        txHash: unwrapTxHash,
+        chainId: pair.chainId,
+        walletAddress: address,
+      })
       setState("pending")
     } catch (e: unknown) {
       setError(friendlyError(e))
       setState("error")
     }
-  }, [pair, address, amount, publicClient, walletClient, add])
+  }, [pair, address, amount, publicClient, walletClient, add, rawAmount, logActivity])
 
   const finalize = useCallback(
-    async (wrapperAddress: `0x${string}`, burnHandle: `0x${string}`, chainId: number) => {
+    async (wrapperAddress: `0x${string}`, burnHandle: `0x${string}`, chainId: number, symbol?: string) => {
       if (!publicClient || !walletClient) throw new Error("Wallet not connected")
       const sdk = await getZamaSDK(walletClient, publicClient, chainId)
       const hash = await finalizeUnwrapTx(sdk, wrapperAddress, burnHandle)
       setFinalizeTxHash(hash)
+      if (address) {
+        logActivity({
+          type: "finalize",
+          label: `Finalized unwrap of ${symbol ?? "token"}`,
+          symbol,
+          txHash: hash,
+          chainId,
+          walletAddress: address,
+        })
+      }
       return hash
     },
-    [publicClient, walletClient]
+    [publicClient, walletClient, address, logActivity]
   )
 
   const reset = useCallback(() => {
