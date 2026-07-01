@@ -1,9 +1,10 @@
 "use client"
 
+import Link from "next/link"
 import { useChainId } from "wagmi"
 import { mainnet, sepolia } from "wagmi/chains"
 import { formatUnits } from "viem"
-import { Shield, Database, Plus } from "lucide-react"
+import { Shield, Database, Plus, ArrowRight } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { formatCompactNumber } from "@/lib/format"
 import { useCountUp } from "@/hooks/useCountUp"
@@ -49,34 +50,51 @@ export function TVSSummary({ pairs, isLoading }: Props) {
     {
       label: "Custom Pairs",
       value: isLoading ? "—" : Math.round(customDisplay),
-      sub: "via config/customPairs.ts",
+      sub: "Add a pair →",
       icon: Plus,
       iconClass: "bg-emerald-500/10 text-emerald-400",
+      href: "/add-pair",
     },
   ]
 
   return (
     <div className="grid gap-4 sm:grid-cols-3">
-      {stats.map((s, i) => (
-        <Card
-          key={s.label}
-          className="border-border/60 animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-500"
-          style={{ animationDelay: `${i * 80}ms` }}
-        >
+      {stats.map((s, i) => {
+        const body = (
           <CardContent className="pt-5 pb-5">
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1 min-w-0">
                 <p className="text-xs text-muted-foreground">{s.label}</p>
                 <p className="text-2xl font-semibold tracking-tight truncate tabular-nums">{s.value}</p>
-                <p className="text-xs text-muted-foreground">{s.sub}</p>
+                <p className={`text-xs ${s.href ? "text-primary" : "text-muted-foreground"}`}>{s.sub}</p>
               </div>
-              <div className={`rounded-lg p-2 shrink-0 transition-transform duration-300 hover:scale-110 ${s.iconClass}`}>
-                <s.icon className="h-4 w-4" />
+              <div
+                className={`rounded-lg p-2 shrink-0 transition-transform duration-300 ${
+                  s.href ? "group-hover:scale-110 group-hover:rotate-90" : "hover:scale-110"
+                } ${s.iconClass}`}
+              >
+                {s.href ? <ArrowRight className="h-4 w-4" /> : <s.icon className="h-4 w-4" />}
               </div>
             </div>
           </CardContent>
-        </Card>
-      ))}
+        )
+
+        const cardClass = `border-border/60 animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-500 ${
+          s.href ? "group cursor-pointer transition-colors hover:border-primary/40" : ""
+        }`
+
+        return s.href ? (
+          <Link key={s.label} href={s.href} className="block">
+            <Card className={cardClass} style={{ animationDelay: `${i * 80}ms` }}>
+              {body}
+            </Card>
+          </Link>
+        ) : (
+          <Card key={s.label} className={cardClass} style={{ animationDelay: `${i * 80}ms` }}>
+            {body}
+          </Card>
+        )
+      })}
     </div>
   )
 }
